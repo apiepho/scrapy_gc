@@ -1,0 +1,13 @@
+
+
+scrapy_gc - 
+This simple tool uses the Python based scrapy framework to crawl pages from craigslist and
+parse all the entries for a given category.  This is a "sharpen the ax project" to learn
+how scrapy works.  
+
+This is a follow on to gc_app written in Ruby, with scrapy being much faster.  Applying
+scrapy to craigslist is the first stepping stone to other projoects involving more
+complicated web sites (with login screens and links that must be scraped).
+
+For more details, checkout the NOTES.txt in the GitHub project that can be found at:
+https://github.com/apiepho/scrapy_craigslist.git
