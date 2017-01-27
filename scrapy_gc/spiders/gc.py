@@ -2,6 +2,7 @@ from scrapy.spiders  import Spider
 from scrapy.selector import Selector
 
 import scrapy
+import scrapy_splash
 import sys
 import os
 
@@ -93,12 +94,20 @@ class GameChanger(Spider):
         sel = Selector(response)
         list = sel.css('ul[id=menu]')
         links = list.css('a')
-        #links = links[21:22]  # just roos for debug
+        links = links[21:22]  # just roos for debug
         for link in links:
             href = link.css('a::attr(href)').extract_first()
             if href.find('/t/') != -1:
                 next_page = self.base_url + href
-                yield scrapy.Request(next_page, callback=self.parse_team)
+                #yield scrapy.Request(next_page, callback=self.parse_team)
+                yield scrapy.Request(next_page, callback=self.parse_team, meta={
+                	'splash': {
+                		'args': {
+                			'wait': 0.0,
+                			'html': 1
+                		}
+                	}
+                })
                 #return
         pass
        
@@ -107,60 +116,64 @@ class GameChanger(Spider):
         print "TEAM: " + response.url
         self.cache_name(response.url)
         self.cache_page(response.body)
+        #print response.body
 
         sel = Selector(response)
-        list = sel.css('ul[id=newsList]')
+        
+        # process game links
+        list = sel.css('li[class=newsFeedItem]')
         links = list.css('a')
         for link in links:
             href = link.css('a::attr(href)').extract_first()
-            print href
-            '''
-            if href.find('/t/') != -1:
+            if href.find('/stats') != -1:
                 next_page = self.base_url + href
-                yield scrapy.Request(next_page, callback=self.parse_team)
+                yield scrapy.Request(next_page, callback=self.parse_game_stats, meta={
+                	'splash': {
+                		'args': {
+                			'wait': 0.0,
+                			'html': 1
+                		}
+                	}
+                })
                 #return
-            '''
         pass
+        
+    # handle response of each game stat page
+    def parse_game_stats(self, response):
+        print "GAME STAT: " + response.url
+        self.cache_name(response.url)
+        self.cache_page(response.body)
+        pass
+ 
+    # handle response of each game stat page
+    def parse_game_recap(self, response):
+        print "GAME RECAP: " + response.url
+        self.cache_name(response.url)
+        self.cache_page(response.body)
+        pass
+       
+    '''
+GC_PLAYS_URI                      = GC_BASE_URI + "/game-%s/plays"
+GC_SCOREBOOK_URI                  = GC_BASE_URI + "/game-%s/scorebook"
 
+GC_ROSTER_URI                     = "%s/roster"                # given team guid
+GC_PLAYER_URI                     = "%s/p/%s"                  # given team guid and player fname-lastinitial-guid
+GC_RECAP_URI                      = "%s/game-%s/recap-story"   # given base and game guid
 
-        '''
-        #self.cache_page(response.url)
+GC_STATS_URI                      = "%s/game-%s/stats"         # given base and game guid
 
-        sel = Selector(response)
-  
-        # check for list, if so, list all categories from main page
-        if self.category == 'list':
-            print "listing categories:"
-            container_lists = sel.css('a')
-            for li in container_lists:
-                if li.extract().find("data-cat") != -1:
-                    sym  = li.css('a::attr(class)').extract_first()
-                    href = li.css('a::attr(href)').extract_first()
-                    desc = li.css('span::text').extract_first()
-                    print("%-30s%-10s%s" % (desc, sym, href))
+# parameters for the following: [GC_BASE_URI, fteam, team_id, fname, linitial, player_id]
+GC_PLAYER_BATTING_STANDARD_URI    = "%s/t/%s-%s/p/%s-%s-%s/batting/standard"
+GC_PLAYER_BATTING_SPEED_URI       = "%s/t/%s-%s/p/%s-%s-%s/batting/expanded"
+GC_PLAYER_BATTING_TEAMIMPACT_URI  = "%s/t/%s-%s/p/%s-%s-%s/batting/expanded2"
+GC_PLAYER_PITCHING_STANDARD_URI   = "%s/t/%s-%s/p/%s-%s-%s/pitching/standard"
+GC_PLAYER_PITCHING_EFFICIENCY_URI = "%s/t/%s-%s/p/%s-%s-%s/pitching/expanded"
+GC_PLAYER_PITCHING_COMMAND_URI    = "%s/t/%s-%s/p/%s-%s-%s/pitching/expanded2"
+GC_PLAYER_PITCHING_BATTER_URI     = "%s/t/%s-%s/p/%s-%s-%s/pitching/expanded3"
+GC_PLAYER_PITCHING_RUNS_URI       = "%s/t/%s-%s/p/%s-%s-%s/pitching/expanded4"
+GC_PLAYER_PITCHING_PITCH_URI      = "%s/t/%s-%s/p/%s-%s-%s/pitching/expanded5"
+GC_PLAYER_FIELDING_STANDARD_URI   = "%s/t/%s-%s/p/%s-%s-%s/fielding/standard"
+GC_PLAYER_FIELDING_CATCHING_URI   = "%s/t/%s-%s/p/%s-%s-%s/fielding/expanded"
+GC_PLAYER_BATTING_SPRAY_URI       = "%s/t/%s-%s/p/%s-%s-%s/spray-chart"
+    '''
 
-        # check for first page of a category, if so, find total and start sequence of pages
-        elif response.url.find('?s=') == -1:
-            self.totalcount = int(sel.css('span[class=totalcount]::text').extract_first())
-            print("totalcount  : %d" % self.totalcount)
-            next_page = "?s=%d" % self.currentcount
-            next_page = response.urljoin(next_page)
-            yield scrapy.Request(next_page, callback=self.parse)
-        # this should be one of the sequence of pages, parse items and start next page
-        # select all rows
-        container_lists = sel.css('li[class="result-row"]')
-        for li in container_lists:
-            yield {
-                'description': li.css('p a::text').extract_first(),
-                'location':    li.css('p a::attr(href)').extract_first(),
-                'time':        li.css('p time::attr(datetime)').extract_first()
-            }
-            
-        # update count and start next page
-        self.currentcount += 100
-        if self.currentcount < self.totalcount:
-            next_page = "?s=%d" % self.currentcount
-            next_page = response.urljoin(next_page)
-            yield scrapy.Request(next_page, callback=self.parse)
-            #return
-        '''
