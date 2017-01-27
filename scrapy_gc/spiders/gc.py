@@ -9,8 +9,9 @@ class GameChanger(Spider):
     name = "gc"
     allowed_domains = [ 'gc.com' ]
     start_urls      = [ 'https://gc.com/login' ]
-    base_url        = 'https://gc.com/'
-    teams_url       = base_url + 'teams'
+    base_url        = 'https://gc.com'
+    base_url_slash  = 'https://gc.com/'
+    teams_url       = base_url + '/teams'
     cache_file      = ""
 
     def usage(self):
@@ -21,28 +22,28 @@ class GameChanger(Spider):
     def cache_name(self, url):
         # build gc_app style file name, do name when calling to avoid redirect changes
         self.cache_file = url
-        self.cache_file = self.cache_file.replace(self.base_url, "")
+        self.cache_file = self.cache_file.replace(self.base_url_slash, "")
         self.cache_file = self.cache_file.replace("/", "_")
         self.cache_file = self.cache_file.replace("?", "_")
         self.cache_file = self.cache_file.replace("=", "_")
         self.cache_file = self.cache_file.replace("&", "_")
         self.cache_file = "%s/%s.html" % (self.cache_dir, self.cache_file)
 
-    def cache_page(self, url):
+    def cache_page(self, body):
         print self.cache_file
         # attempt to create cache dir
         try:
             os.makedirs(self.cache_dir)
         except:
-            print "note: cache dir exists"
+            #print "note: cache dir exists"
             pass
         # attempt to create write file
         try:
             text_file = open(self.cache_file, "w")
-            text_file.write(response.body)
+            text_file.write(body)
             text_file.close()
         except:
-            print "note: cache file exists"
+            print("note: cache file exists (%s)" % self.cache_file)
             pass
 
     def __init__(self, email = None, password = None, cache_dir = None, *args, **kwargs):
@@ -87,12 +88,38 @@ class GameChanger(Spider):
     # handle response of teams page
     def parse_teams(self, response):
         print "TEAMS: " + response.url
-        self.cache_page(response.url)
-        print response.body
+        self.cache_page(response.body)
+
+        sel = Selector(response)
+        list = sel.css('ul[id=menu]')
+        links = list.css('a')
+        #links = links[21:22]  # just roos for debug
+        for link in links:
+            href = link.css('a::attr(href)').extract_first()
+            if href.find('/t/') != -1:
+                next_page = self.base_url + href
+                yield scrapy.Request(next_page, callback=self.parse_team)
+                #return
         pass
        
     # handle response of each team page
     def parse_team(self, response):
+        print "TEAM: " + response.url
+        self.cache_name(response.url)
+        self.cache_page(response.body)
+
+        sel = Selector(response)
+        list = sel.css('ul[id=newsList]')
+        links = list.css('a')
+        for link in links:
+            href = link.css('a::attr(href)').extract_first()
+            print href
+            '''
+            if href.find('/t/') != -1:
+                next_page = self.base_url + href
+                yield scrapy.Request(next_page, callback=self.parse_team)
+                #return
+            '''
         pass
 
 
