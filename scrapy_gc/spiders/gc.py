@@ -5,6 +5,7 @@ import scrapy
 import scrapy_splash
 import sys
 import os
+import time
 
 class GameChanger(Spider):
     name = "gc"
@@ -92,13 +93,14 @@ class GameChanger(Spider):
         self.cache_page(response.body)
 
         sel = Selector(response)
-        list = sel.css('ul[id=menu]')
-        links = list.css('a')
+        elems = sel.css('ul[id=menu]')
+        links = elems.css('a')
         links = links[21:22]  # DEBUG: just roos for debug
         for link in links:
             href = link.css('a::attr(href)').extract_first()
             if href.find('/t/') != -1:
                 next_page = self.base_url + href
+                #yield scrapy.Request(next_page, callback=self.parse_team)
                 yield scrapy.Request(next_page, callback=self.parse_team, meta={'splash': {'args': {'wait': 0.0, 'html': 1}}})
                 #return
         pass
@@ -110,26 +112,45 @@ class GameChanger(Spider):
         self.cache_page(response.body)
        
         # get roster
+        '''
         next_page = response.url + '/roster'
         yield scrapy.Request(
             next_page,
             callback=self.parse_team_roster,
             meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
         )
+        '''
                 
         # process game links
         sel = Selector(response)
-        list = sel.css('li[class=newsFeedItem]')
-        links = list.css('a')
+        elems = sel.css('li[class=newsFeedItem]')
+        links = elems.css('a')
+        links = links[-4:]  # DEBUG: just 1st game (hrefs in pairs)
         for link in links:
             href = link.css('a::attr(href)').extract_first()
-            if href.find('/recap-story') != -1:
-                next_page = self.base_url + href
-                next_page = next_page.replace( 'recap-story', 'stats')
-                yield scrapy.Request(next_page, callback=self.parse_game_stats)
-                #yield scrapy.Request(next_page, callback=self.parse_game_stats, meta={'splash': {'args': {'wait': 0.0, 'html': 1}}})
-                next_page = next_page.replace( 'stats', 'plays')
-                yield scrapy.Request(next_page, callback=self.parse_game_stats)
+            # want these /game-56e4c51a57a7013ef9000002, not with stats or recap. testing to keep order
+            if len(href) == 30:
+                print href
+                next_page = self.base_url + href + '/stats'
+                #yield scrapy.Request(next_page, callback=self.parse_game_stats)
+                next_page = self.base_url + href + '/plays'
+
+                #yield scrapy.Request(next_page, callback=self.parse_game_plays)
+                #yield scrapy.Request(next_page, callback=self.parse_game_plays, meta={'splash': {'args': {'wait': 10.0, 'html': 1}}})
+                luascript = '''
+					function main(splash)
+					  --splash:set_user_agent(splash.args.ua)
+					  assert(splash:go(splash.args.url))
+
+					  -- requires Splash 2.3  
+					  while not splash:select('.sabertooth_pbp_inning_row') do
+						splash:wait(0.1)
+					  end
+					  return {html=splash:html()}
+					end
+				'''
+                #yield scrapy.Request(next_page, callback=self.parse_game_plays, meta={'splash': {'args': {'lua_source': luascript}}})
+                yield scrapy_splash.SplashRequest(next_page, callback=self.parse_game_plays, endpoint='execute', args={'lua_source': luascript})
                 #return
         pass
 
@@ -153,6 +174,7 @@ class GameChanger(Spider):
         print "TEAM ROSTER: " + response.url
         self.cache_name(response.url)
         self.cache_page(response.body)
+        #return  # DEBUG: no stats
 
         # get player pages
         sel = Selector(response)
@@ -229,7 +251,8 @@ class GameChanger(Spider):
             yield scrapy.Request(next_page, callback=self.parse_player_stat)
 
             next_page = saved_page + '/spray-chart'
-            yield scrapy.Request(next_page, callback=self.parse_player_stat)
+            #yield scrapy.Request(next_page, callback=self.parse_player_stat)
+            yield scrapy.Request(next_page, callback=self.parse_player_stat, meta={'splash': {'args': {'wait': 5.0, 'html': 1}}})
         pass
 
     # handle response of each player stat page
