@@ -99,11 +99,7 @@ class GameChanger(Spider):
             href = link.css('a::attr(href)').extract_first()
             if href.find('/t/') != -1:
                 next_page = self.base_url + href
-                yield scrapy.Request(
-                	next_page,
-                	callback=self.parse_team,
-                	meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
-                )
+                yield scrapy.Request(next_page, callback=self.parse_team, meta={'splash': {'args': {'wait': 0.0, 'html': 1}}})
                 #return
         pass
        
@@ -130,17 +126,10 @@ class GameChanger(Spider):
             if href.find('/recap-story') != -1:
                 next_page = self.base_url + href
                 next_page = next_page.replace( 'recap-story', 'stats')
-                yield scrapy.Request(
-                	next_page,
-                	callback=self.parse_game_stats,
-                	meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
-                )
+                yield scrapy.Request(next_page, callback=self.parse_game_stats)
+                #yield scrapy.Request(next_page, callback=self.parse_game_stats, meta={'splash': {'args': {'wait': 0.0, 'html': 1}}})
                 next_page = next_page.replace( 'stats', 'plays')
-                yield scrapy.Request(
-                	next_page,
-                	callback=self.parse_game_stats,
-                	meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
-                )
+                yield scrapy.Request(next_page, callback=self.parse_game_stats)
                 #return
         pass
 
@@ -206,88 +195,41 @@ class GameChanger(Spider):
             saved_page = next_page
 
             next_page = saved_page + '/batting/standard'
-            yield scrapy.Request(
-                next_page,
-                callback=self.parse_player_stat,
-                meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
-            )
+            yield scrapy.Request(next_page, callback=self.parse_player_stat)
+            #yield scrapy.Request(next_page, callback=self.parse_player_stat, meta={'splash': {'args': {'wait': 0.0, 'html': 1}}})
 
             next_page = saved_page + '/batting/expanded'
-            yield scrapy.Request(
-                next_page,
-                callback=self.parse_player_stat,
-                meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
-            )
+            yield scrapy.Request(next_page, callback=self.parse_player_stat)
 
             next_page = saved_page + '/batting/expanded2'
-            yield scrapy.Request(
-                next_page,
-                callback=self.parse_player_stat,
-                meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
-            )
+            yield scrapy.Request(next_page, callback=self.parse_player_stat)
 
             next_page = saved_page + '/pitching/standard'
-            yield scrapy.Request(
-                next_page,
-                callback=self.parse_player_stat,
-                meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
-            )
+            yield scrapy.Request(next_page, callback=self.parse_player_stat)
 
             next_page = saved_page + '/pitching/expanded'
-            yield scrapy.Request(
-                next_page,
-                callback=self.parse_player_stat,
-                meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
-            )
+            yield scrapy.Request(next_page, callback=self.parse_player_stat)
 
             next_page = saved_page + '/pitching/expanded2'
-            yield scrapy.Request(
-                next_page,
-                callback=self.parse_player_stat,
-                meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
-            )
+            yield scrapy.Request(next_page, callback=self.parse_player_stat)
 
             next_page = saved_page + '/pitching/expanded3'
-            yield scrapy.Request(
-                next_page,
-                callback=self.parse_player_stat,
-                meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
-            )
+            yield scrapy.Request(next_page, callback=self.parse_player_stat)
 
             next_page = saved_page + '/pitching/expanded4'
-            yield scrapy.Request(
-                next_page,
-                callback=self.parse_player_stat,
-                meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
-            )
+            yield scrapy.Request(next_page, callback=self.parse_player_stat)
 
             next_page = saved_page + '/pitching/expanded5'
-            yield scrapy.Request(
-                next_page,
-                callback=self.parse_player_stat,
-                meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
-            )
+            yield scrapy.Request(next_page, callback=self.parse_player_stat)
 
             next_page = saved_page + '/fielding/standard'
-            yield scrapy.Request(
-                next_page,
-                callback=self.parse_player_stat,
-                meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
-            )
+            yield scrapy.Request(next_page, callback=self.parse_player_stat)
 
             next_page = saved_page + '/fielding/expanded'
-            yield scrapy.Request(
-                next_page,
-                callback=self.parse_player_stat,
-                meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
-            )
+            yield scrapy.Request(next_page, callback=self.parse_player_stat)
 
             next_page = saved_page + '/spray-chart'
-            yield scrapy.Request(
-                next_page,
-                callback=self.parse_player_stat,
-                meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
-            )
+            yield scrapy.Request(next_page, callback=self.parse_player_stat)
         pass
 
     # handle response of each player stat page
