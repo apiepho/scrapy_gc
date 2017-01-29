@@ -2,10 +2,28 @@ from scrapy.spiders  import Spider
 from scrapy.selector import Selector
 
 import scrapy
-import scrapy_splash
+import scrapy_splash  # better for server farm?
 import sys
 import os
 import time
+
+'''
+import PyQt5.QtGui import QApplication
+import PyQt5.QtCore import QUrl
+import PyQt5.QtWebKit import QWebPage
+
+Class QClient(QWwebPage):
+
+	def __init__(self, url):
+		self.app = QApplication(sys.argv)
+		QWebPage.__init__(self)
+		self.loadFinished.connect(self.on_page_load)
+		self.mainFrame().load(QUrl(url))
+	
+	def on_page_load(self):
+		self.app.quit()
+'''
+		
 
 class GameChanger(Spider):
     name = "gc"
@@ -113,13 +131,13 @@ class GameChanger(Spider):
        
         # get roster
         '''
+        '''
         next_page = response.url + '/roster'
         yield scrapy.Request(
             next_page,
             callback=self.parse_team_roster,
             meta={'splash': {'args': {'wait': 0.0, 'html': 1}}}
         )
-        '''
                 
         # process game links
         sel = Selector(response)
@@ -137,7 +155,17 @@ class GameChanger(Spider):
                 # BUG: scrapy_gc cannot gather the plays pages correctly.  I have tried several methods to add
                 # scrapy-splash and long waits, but here seems to be something about how those pages are streaming
                 # the play by play data.  Disable for now.
-                #next_page = self.base_url + href + '/plays'
+                #
+                # found suggestion that default user agent string is blocked
+                #
+                # try PyQt5
+                '''
+                next_page = self.base_url + href + '/plays'
+                client_response = QClient(next_page)
+                source = client_response.mainFrame().toHtml()
+                self.cache_name(next_page)
+                self.cache_page(source)
+                '''
                 #yield scrapy.Request(next_page, callback=self.parse_game_plays)
                 #yield scrapy.Request(next_page, callback=self.parse_game_plays, meta={'splash': {'args': {'wait': 0.5, 'html': 1}}})
                 luascript = '''
@@ -180,11 +208,13 @@ class GameChanger(Spider):
         pass
  
     # handle response of each game plays page
+    '''
     def parse_game_plays(self, response):
         print "GAME PLAYS: " + response.url
         self.cache_name(response.url)
         self.cache_page(response.body)
         pass
+    '''
 
     # handle response of each team roster page
     def parse_team_roster(self, response):
