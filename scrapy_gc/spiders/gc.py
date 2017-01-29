@@ -95,7 +95,7 @@ class GameChanger(Spider):
         sel = Selector(response)
         elems = sel.css('ul[id=menu]')
         links = elems.css('a')
-        links = links[21:22]  # DEBUG: just roos for debug
+        #links = links[21:22]  # DEBUG: just roos for debug
         for link in links:
             href = link.css('a::attr(href)').extract_first()
             if href.find('/t/') != -1:
@@ -125,32 +125,49 @@ class GameChanger(Spider):
         sel = Selector(response)
         elems = sel.css('li[class=newsFeedItem]')
         links = elems.css('a')
-        links = links[-4:]  # DEBUG: just 1st game (hrefs in pairs)
+        #links = links[-4:]  # DEBUG: just 1st game (hrefs in pairs)
         for link in links:
             href = link.css('a::attr(href)').extract_first()
             # want these /game-56e4c51a57a7013ef9000002, not with stats or recap. testing to keep order
             if len(href) == 30:
-                print href
                 next_page = self.base_url + href + '/stats'
-                #yield scrapy.Request(next_page, callback=self.parse_game_stats)
-                next_page = self.base_url + href + '/plays'
+                yield scrapy.Request(next_page, callback=self.parse_game_stats)
+                #yield scrapy.Request(next_page, callback=self.parse_game_stats, meta={'splash': {'args': {'wait': 0.5, 'html': 1}}})
 
+                # BUG: scrapy_gc cannot gather the plays pages correctly.  I have tried several methods to add
+                # scrapy-splash and long waits, but here seems to be something about how those pages are streaming
+                # the play by play data.  Disable for now.
+                #next_page = self.base_url + href + '/plays'
                 #yield scrapy.Request(next_page, callback=self.parse_game_plays)
-                #yield scrapy.Request(next_page, callback=self.parse_game_plays, meta={'splash': {'args': {'wait': 10.0, 'html': 1}}})
+                #yield scrapy.Request(next_page, callback=self.parse_game_plays, meta={'splash': {'args': {'wait': 0.5, 'html': 1}}})
                 luascript = '''
 					function main(splash)
-					  --splash:set_user_agent(splash.args.ua)
-					  assert(splash:go(splash.args.url))
-
+					  splash:init_cookies(splash.args.cookies)
+					  assert(splash:go{
+						splash.args.url,
+						headers=splash.args.headers,
+						http_method=splash.args.http_method,
+						body=splash.args.body,
+						})
+					  splash:wait(5.0)
+					  splash:wait(5.0)
 					  -- requires Splash 2.3  
-					  while not splash:select('.sabertooth_pbp_inning_row') do
-						splash:wait(0.1)
-					  end
-					  return {html=splash:html()}
+					  -- while not splash:select('.sabertooth_pbp_inning_row') do
+					  -- splash:wait(0.1)
+					  -- end
+
+					  local entries = splash:history()
+					  local last_response = entries[#entries].response
+					  return {
+						url = splash:url(),
+						headers = last_response.headers,
+						http_status = last_response.status,
+						cookies = splash:get_cookies(),
+						html = splash:html(),
+					  }
 					end
 				'''
-                #yield scrapy.Request(next_page, callback=self.parse_game_plays, meta={'splash': {'args': {'lua_source': luascript}}})
-                yield scrapy_splash.SplashRequest(next_page, callback=self.parse_game_plays, endpoint='execute', args={'lua_source': luascript})
+                #yield scrapy_splash.SplashRequest(next_page, callback=self.parse_game_plays, endpoint='execute', args={'lua_source': luascript})
                 #return
         pass
 
