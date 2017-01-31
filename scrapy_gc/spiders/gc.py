@@ -7,24 +7,6 @@ import sys
 import os
 import time
 
-'''
-import PyQt5.QtGui import QApplication
-import PyQt5.QtCore import QUrl
-import PyQt5.QtWebKit import QWebPage
-
-Class QClient(QWwebPage):
-
-	def __init__(self, url):
-		self.app = QApplication(sys.argv)
-		QWebPage.__init__(self)
-		self.loadFinished.connect(self.on_page_load)
-		self.mainFrame().load(QUrl(url))
-	
-	def on_page_load(self):
-		self.app.quit()
-'''
-		
-
 class GameChanger(Spider):
     name = "gc"
     allowed_domains = [ 'gc.com' ]
@@ -113,7 +95,10 @@ class GameChanger(Spider):
         sel = Selector(response)
         elems = sel.css('ul[id=menu]')
         links = elems.css('a')
-        #links = links[21:22]  # DEBUG: just roos for debug
+        # DEBUG: just roos for debug
+        '''
+        links = links[21:22]
+        '''
         for link in links:
             href = link.css('a::attr(href)').extract_first()
             if href.find('/t/') != -1:
@@ -131,6 +116,7 @@ class GameChanger(Spider):
        
         # get roster
         '''
+        # DEBUG no rosters
         '''
         next_page = response.url + '/roster'
         yield scrapy.Request(
@@ -143,7 +129,10 @@ class GameChanger(Spider):
         sel = Selector(response)
         elems = sel.css('li[class=newsFeedItem]')
         links = elems.css('a')
-        #links = links[-4:]  # DEBUG: just 1st game (hrefs in pairs)
+        # DEBUG: just 1st game (hrefs in pairs)
+        '''
+        links = links[-4:]
+        '''
         for link in links:
             href = link.css('a::attr(href)').extract_first()
             # want these /game-56e4c51a57a7013ef9000002, not with stats or recap. testing to keep order
@@ -156,44 +145,35 @@ class GameChanger(Spider):
                 # scrapy-splash and long waits, but here seems to be something about how those pages are streaming
                 # the play by play data.  Disable for now.
                 #
-                # found suggestion that default user agent string is blocked
-                #
-                # try PyQt5
-                '''
-                next_page = self.base_url + href + '/plays'
-                client_response = QClient(next_page)
-                source = client_response.mainFrame().toHtml()
-                self.cache_name(next_page)
-                self.cache_page(source)
-                '''
+                #next_page = self.base_url + href + '/plays'
                 #yield scrapy.Request(next_page, callback=self.parse_game_plays)
-                #yield scrapy.Request(next_page, callback=self.parse_game_plays, meta={'splash': {'args': {'wait': 0.5, 'html': 1}}})
+                #yield scrapy.Request(next_page, callback=self.parse_game_plays, meta={'splash': {'args': {'wait': 5.0, 'html': 1}}})
                 luascript = '''
-					function main(splash)
-					  splash:init_cookies(splash.args.cookies)
-					  assert(splash:go{
-						splash.args.url,
-						headers=splash.args.headers,
-						http_method=splash.args.http_method,
-						body=splash.args.body,
-						})
-					  splash:wait(5.0)
-					  splash:wait(5.0)
-					  -- requires Splash 2.3  
-					  -- while not splash:select('.sabertooth_pbp_inning_row') do
-					  -- splash:wait(0.1)
-					  -- end
+function main(splash)
+  splash:init_cookies(splash.args.cookies)
+  assert(splash:go{
+	splash.args.url,
+	headers=splash.args.headers,
+	http_method=splash.args.http_method,
+	body=splash.args.body,
+	})
+  splash:wait(5.0)
+  splash:wait(5.0)
+  -- requires Splash 2.3  
+  -- while not splash:select('.sabertooth_pbp_inning_row') do
+  -- splash:wait(0.1)
+  -- end
 
-					  local entries = splash:history()
-					  local last_response = entries[#entries].response
-					  return {
-						url = splash:url(),
-						headers = last_response.headers,
-						http_status = last_response.status,
-						cookies = splash:get_cookies(),
-						html = splash:html(),
-					  }
-					end
+  local entries = splash:history()
+  local last_response = entries[#entries].response
+  return {
+	url = splash:url(),
+	headers = last_response.headers,
+	http_status = last_response.status,
+	cookies = splash:get_cookies(),
+	html = splash:html(),
+  }
+end
 				'''
                 #yield scrapy_splash.SplashRequest(next_page, callback=self.parse_game_plays, endpoint='execute', args={'lua_source': luascript})
                 #return
@@ -208,13 +188,11 @@ class GameChanger(Spider):
         pass
  
     # handle response of each game plays page
-    '''
     def parse_game_plays(self, response):
         print "GAME PLAYS: " + response.url
         self.cache_name(response.url)
         self.cache_page(response.body)
         pass
-    '''
 
     # handle response of each team roster page
     def parse_team_roster(self, response):
